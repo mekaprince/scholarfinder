@@ -2,8 +2,14 @@
   publish = "public"
   functions = "netlify/functions"
 [[redirects]]
+  from = "/api/stage2/*"
+  to = "/.netlify/functions/stage2/:splat"
+  status = 200
+[[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"
   status = 200
 [functions."discover"]
   schedule = "@daily"
+[functions."ai_process"]
+  schedule = "*/15 * * * *"

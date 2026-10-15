@@ -1,0 +1,19 @@
+:root{--bg:#f6f5f1;--ink:#1d2a2e;--mute:#5d6b6f;--line:#d9d6cc;--teal:#0e6b5c;--amber:#a15c07;--red:#a32a2a;--card:#fffefb}
+@media(prefers-color-scheme:dark){:root{--bg:#141a1c;--ink:#e8ece9;--mute:#9aa8aa;--line:#2b3639;--teal:#5fc4b0;--amber:#e0a23c;--red:#e48080;--card:#1b2325}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,'Times New Roman',serif}
+header{display:flex;gap:1rem;align-items:center;flex-wrap:wrap;padding:.8rem 1.2rem;border-bottom:1px solid var(--line)}
+header b{font-size:1.3rem;color:var(--teal)}nav{display:flex;gap:.3rem;flex-wrap:wrap}
+button,input,select,textarea{font:inherit;color:inherit}
+nav button{background:none;border:0;padding:.4rem .7rem;cursor:pointer;border-radius:4px}nav button.on{background:var(--teal);color:var(--bg)}
+main{max-width:860px;margin:0 auto;padding:1.2rem}
+h1{font-size:2rem;line-height:1.2;margin:.5rem 0}h2{margin:1.2rem 0 .4rem}
+.card{background:var(--card);border:1px solid var(--line);border-left-width:5px;padding:.9rem 1rem;margin:.7rem 0;border-radius:3px}
+.card.eligible{border-left-color:var(--teal)}.card.uncertain{border-left-color:var(--amber)}.card.not_met{border-left-color:var(--red)}
+.tag{font:600 .8rem system-ui,sans-serif}.eligible .tag{color:var(--teal)}.uncertain .tag{color:var(--amber)}.not_met .tag{color:var(--red)}
+.mute{color:var(--mute);font-size:.9rem}ul{margin:.3rem 0;padding-left:1.2rem}
+label{display:block;margin:.6rem 0 .1rem;font:600 .9rem system-ui,sans-serif}
+input,select,textarea{width:100%;padding:.5rem;background:var(--card);border:1px solid var(--line);border-radius:3px}
+.btn{background:var(--teal);color:var(--bg);border:0;padding:.5rem 1rem;border-radius:3px;cursor:pointer;font-weight:600;margin:.4rem .4rem 0 0}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}@media(max-width:560px){.row{grid-template-columns:1fr}}
+.err{color:var(--red)}:focus-visible{outline:2px solid var(--teal);outline-offset:2px}

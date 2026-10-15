@@ -76,9 +76,16 @@ async function profileView(){
     await api('/profile','PUT',b);data=[];$('#ok').textContent='Saved';};
 }
 async function adminView(){
-  const r=await api('/admin/review');
-  app.innerHTML='<h1>Records to review</h1>'+(r.map(s=>`<div class="card"><b>${esc(s.title)}</b> <span class="mute">${esc(s.provider)}</span><div><a href="${esc(s.source_url)}" target="_blank" rel="noopener">Open source and verify</a></div>
-  <button class="btn" data-s="${s.id}" data-v="active">Approve</button><button class="btn alt" data-s="${s.id}" data-v="inactive">Reject</button></div>`).join('')||'<p class="mute">Nothing waiting for review.</p>');
+  const [r,src,runs]=await Promise.all([api('/admin/review'),api('/admin/sources'),api('/admin/runs')]);
+  app.innerHTML='<h1>Records to review</h1>'+(r.map(s=>`<div class="card"><b>${esc(s.title)}</b> <span class="mute">${esc(s.provider)} · deadline ${s.deadline?esc(s.deadline.slice(0,10)):'not found'}</span><div><a href="${esc(s.source_url)}" target="_blank" rel="noopener">Open source and verify</a></div>
+  <button class="btn" data-s="${s.id}" data-v="active">Approve</button><button class="btn alt" data-s="${s.id}" data-v="inactive">Reject</button></div>`).join('')||'<p class="mute">Nothing waiting for review.</p>')+
+  `<h2>Discovery sources</h2>`+src.map(x=>`<div class="mute">${esc(x.name)} (${esc(x.kind)}) · last run ${x.last_run?esc(x.last_run.slice(0,16)):'never'}</div>`).join('')+
+  `<div class="card"><label>Name<input id="sn"></label><label>Feed or page URL (https)<input id="su"></label>
+  <label>Type<select id="sk"><option value="rss">RSS/Atom feed</option><option value="page">Single web page</option></select></label>
+  <button class="btn" id="sa">Add source</button><button class="btn alt" id="sr">Run discovery now</button> <span id="sm" class="mute"></span></div>
+  <h2>Recent runs</h2>`+runs.slice(0,10).map(x=>`<div class="${x.ok?'mute':'err'}">${esc(x.name)}: ${x.ok?x.found+' new':'failed: '+esc(x.error)} · ${esc(x.started_at.slice(0,16))}</div>`).join('');
   app.querySelectorAll('[data-s]').forEach(b=>b.onclick=async()=>{await api(`/admin/scholarships/${b.dataset.s}/status`,'PUT',{status:b.dataset.v});adminView()});
+  $('#sa').onclick=async()=>{try{await api('/admin/sources','POST',{name:$('#sn').value,url:$('#su').value,kind:$('#sk').value});adminView()}catch(x){$('#sm').textContent=x.message}};
+  $('#sr').onclick=async()=>{$('#sm').textContent='Running…';try{await api('/admin/run','POST');adminView()}catch(x){$('#sm').textContent=x.message}};
 }
 render();

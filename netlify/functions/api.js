@@ -1,6 +1,7 @@
 const { neon } = require('@neondatabase/serverless');
 const bcrypt = require('bcryptjs'), jwt = require('jsonwebtoken');
 const { match } = require('./match');
+const { runDiscovery } = require('./discover_lib');
 const sql = (q, p=[]) => neon(process.env.DATABASE_URL).query(q, p);
 const SECRET = process.env.JWT_SECRET;
 const ok = (b, c=200) => ({ statusCode:c, headers:{'content-type':'application/json'}, body:JSON.stringify(b) });
@@ -54,6 +55,11 @@ exports.handler = async (e) => {
           [body.title,body.provider,body.country,body.degree_levels||[],body.eligible_nationalities||null,body.fields||null,body.min_degree_class||null,body.min_work_years||null,body.min_ielts||null,body.funding_type||'unknown',body.funding_details||null,body.deadline||null,body.source_url,body.application_url||body.source_url]);
         return ok({ok:true},201);
       }
+      if (path==='/admin/sources') {
+        if (m==='POST') { if(!/^https:\/\//.test(body.url||'')) return ok({error:'Source URL must start with https://'},400);
+          await sql('insert into sources(name,url,kind) values($1,$2,$3) on conflict(url) do nothing',[body.name||body.url,body.url,body.kind==='page'?'page':'rss']); }
+        return ok(await sql('select * from sources order by id')); }
+      if (path==='/admin/run' && m==='POST') return ok(await runDiscovery(sql, fetch, 3));
       if (path==='/admin/runs') return ok(await sql('select r.*,s.name from discovery_runs r left join sources s on s.id=r.source_id order by r.id desc limit 50'));
     }
     return ok({error:'Not found'},404);

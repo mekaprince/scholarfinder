@@ -83,8 +83,8 @@ exports.handler = async (e) => {
         const ft=['Fully Funded','Partial','Tuition Only'].includes(body.funding_type)?body.funding_type:'unknown';
         const dc=['first','second_upper','second_lower','third','pass'].includes(body.min_degree_class)?body.min_degree_class:null;
         const nat=arr(body.eligible_nationalities);
-        await sql('update scholarships set title=$2,provider=$3,host_institution=$3,country=$4,funding_type=$5,eligibility_text=$6,funding_details=$7,deadline=$8,application_url=coalesce($9,source_url),min_degree_class=$10,min_work_years=$11,min_ielts=$12,minimum_cgpa=$13,degree_levels=$14,eligible_nationalities=$15 where id=$1',
-          [ed[1],t(body.title),t(body.provider),t(body.country),ft,t(body.eligibility_text),t(body.funding_details),t(body.deadline),t(body.application_url),dc,wy,ie,cg,arr(body.degree_levels),nat.length?nat:null]);
+        await sql('update scholarships set title=$2,provider=$3,host_institution=$3,country=$4,funding_type=$5,eligibility_text=$6,funding_details=$7,deadline=$8,application_url=coalesce($9,source_url),min_degree_class=$10,min_work_years=$11,min_ielts=$12,minimum_cgpa=$13,degree_levels=$14,eligible_nationalities=$15,application_fee_waiver=$16,english_proficiency_exemptions=$17,stay_back_visa_duration=$18,in_study_work_allowance=$19,local_cost_of_living_estimate=$20 where id=$1',
+          [ed[1],t(body.title),t(body.provider),t(body.country),ft,t(body.eligibility_text),t(body.funding_details),t(body.deadline),t(body.application_url),dc,wy,ie,cg,arr(body.degree_levels),nat.length?nat:null,t(body.application_fee_waiver),t(body.english_proficiency_exemptions),t(body.stay_back_visa_duration),t(body.in_study_work_allowance),t(body.local_cost_of_living_estimate)]);
         return ok({ok:true});
       }
       const st = path.match(/^\/admin\/scholarships\/(\d+)\/status$/);

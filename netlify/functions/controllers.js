@@ -28,13 +28,13 @@ async function handle(sql, job, extract) {
   const { data, model } = await extract(job.raw_text);
   const hash = crypto.createHash('sha256').update(job.raw_text).digest('hex');
   const s = await sql(`insert into scholarships(title,provider,host_institution,country,funding_type,eligibility_text,minimum_cgpa,deadline,
-      source_url,application_url,status,ai_extracted,ai_model,content_hash,last_checked)
-    values($1,$2,$2,$3,$4,$5,$6,$7,$8,$8,'needs_review',true,$9,$10,now())
+      source_url,application_url,status,ai_extracted,ai_model,content_hash,last_checked,application_fee_waiver,english_proficiency_exemptions,stay_back_visa_duration,in_study_work_allowance,local_cost_of_living_estimate)
+    values($1,$2,$2,$3,$4,$5,$6,$7,$8,$8,'needs_review',true,$9,$10,now(),$11,$12,$13,$14,$15)
     on conflict(source_url,title) do update set host_institution=excluded.host_institution, provider=excluded.provider, country=excluded.country,
       funding_type=excluded.funding_type, eligibility_text=excluded.eligibility_text, minimum_cgpa=excluded.minimum_cgpa, deadline=excluded.deadline,
-      ai_extracted=true, ai_model=excluded.ai_model, content_hash=excluded.content_hash, last_checked=now(),
+      ai_extracted=true, ai_model=excluded.ai_model, application_fee_waiver=excluded.application_fee_waiver, english_proficiency_exemptions=excluded.english_proficiency_exemptions, stay_back_visa_duration=excluded.stay_back_visa_duration, in_study_work_allowance=excluded.in_study_work_allowance, local_cost_of_living_estimate=excluded.local_cost_of_living_estimate, content_hash=excluded.content_hash, last_checked=now(),
       status=case when scholarships.status='active' and scholarships.content_hash<>excluded.content_hash then 'needs_review' else scholarships.status end
-    returning id`, [data.title, data.host_institution, data.country, data.funding_type || 'unknown', data.eligibility_text, data.minimum_cgpa, data.deadline, job.source_url, model, hash]);
+    returning id`, [data.title, data.host_institution, data.country, data.funding_type || 'unknown', data.eligibility_text, data.minimum_cgpa, data.deadline, job.source_url, model, hash, data.application_fee_waiver, data.english_proficiency_exemptions, data.stay_back_visa_duration, data.in_study_work_allowance, data.local_cost_of_living_estimate]);
   await sql("update ingestion_jobs set status='done', scholarship_id=$2, error=null, updated_at=now() where id=$1", [job.id, s[0].id]);
 }
 async function processBatch(sql, extract, enabled) {

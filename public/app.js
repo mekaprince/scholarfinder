@@ -8,7 +8,8 @@ async function api(path,method='GET',body){
 function logout(){localStorage.clear();token=null;isAdmin=false;render();}
 function render(){
   nav.hidden=!token;
-  if(!token) return authView();
+  if(!token){window.unmountChat&&unmountChat();return authView();}
+  window.mountChat&&mountChat();
   const tabs=[['matches','Matches'],['saved','Saved'],['apps','Applications'],['profile','Profile'],...(isAdmin?[['admin','Review']]:[])];
   nav.innerHTML=tabs.map(([k,l])=>`<button class="${tab===k?'on':''}" data-t="${k}">${l}</button>`).join('')+'<button id="out">Sign out</button>';
   nav.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tab=b.dataset.t;data=[];render()});$('#out').onclick=logout;
@@ -34,20 +35,24 @@ function resetView(t){
   app.innerHTML=`<h1>Choose a new password</h1><div class="card"><label>New password (8+ characters)<input id="p" type="password"></label><p id="msg" class="err"></p><button class="btn" id="go">Save password</button></div>`;
   $('#go').onclick=async()=>{try{await api('/reset','POST',{token:t,password:$('#p').value});history.replaceState(null,'',location.pathname);authView();$('#msg').className='mute';$('#msg').textContent='Password changed. Please sign in.'}catch(x){$('#msg').textContent=x.message}};
 }
+const ctxMap={};
 function card(s){
+  ctxMap[s.id]=s;
   const m=s.match,label={eligible:'You appear eligible',uncertain:'Eligibility uncertain',not_met:'A confirmed requirement is not met'}[m.verdict];
   return `<div class="card ${m.verdict}"><span class="tag">${label}</span>
   <h3 style="margin:.2rem 0">${esc(s.title)}</h3><div class="mute">${esc(s.provider)} · ${esc(s.country)} · ${esc(s.funding_type)} funding · Deadline: ${s.deadline?esc(s.deadline.slice(0,10)):'not confirmed'}</div>
-  ${s.host_institution?`<div class="mute">Host: ${esc(s.host_institution)}</div>`:''}${s.minimum_cgpa!=null?`<p class="mute">Minimum CGPA: ${esc(s.minimum_cgpa)} / 5.0</p>`:''}${s.eligibility_text?`<p>${esc(s.eligibility_text)}</p>`:''}${s.funding_details?`<p>${esc(s.funding_details)}</p>`:''}
+  ${s.host_institution?`<div class="mute">Host: ${esc(s.host_institution)}</div>`:''}${s.minimum_cgpa!=null?`<p class="mute">Minimum CGPA: ${esc(s.minimum_cgpa)} / 5.0</p>`:''}${s.eligibility_text?`<p>${esc(s.eligibility_text)}</p>`:''}${s.funding_details?`<p>${esc(s.funding_details)}</p>`:''}${[['Application fee',s.application_fee_waiver],['English requirement',s.english_proficiency_exemptions],['Stay-back visa',s.stay_back_visa_duration],['Work while studying',s.in_study_work_allowance],['Cost of living',s.local_cost_of_living_estimate]].filter(x=>x[1]).map(x=>`<div class="mute"><b>${x[0]}:</b> ${esc(x[1])}</div>`).join('')}
   ${m.met.length?`<div><b>Met:</b> ${m.met.map(esc).join(', ')}</div>`:''}
   ${m.unmet.length?`<div><b>Not met:</b> ${m.unmet.map(esc).join(', ')}</div>`:''}
   ${m.unknown.length?`<div><b>Unclear:</b><ul>${m.unknown.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
   <div class="mute">Last checked ${esc(s.last_checked?.slice(0,10))} · <a href="${esc(s.source_url)}" target="_blank" rel="noopener">Source</a></div>
   <a class="btn" href="${esc(s.application_url||s.source_url)}" target="_blank" rel="noopener">Apply on official site</a>
   <button class="btn alt" data-save="${s.id}" data-on="${s.saved}">${s.saved?'Unsave':'Save'}</button>
-  <button class="btn alt" data-track="${s.id}">Track application</button></div>`;
+  <button class="btn alt" data-track="${s.id}">Track application</button>
+  <button class="btn alt" data-ask="${s.id}">Ask the Counselor</button></div>`;
 }
 function wire(){
+  app.querySelectorAll('[data-ask]').forEach(b=>b.onclick=()=>openChat(ctxMap[b.dataset.ask]));
   app.querySelectorAll('[data-save]').forEach(b=>b.onclick=async()=>{await api('/saved/'+b.dataset.save,b.dataset.on==='true'?'DELETE':'POST');const s=data.find(x=>x.id==b.dataset.save);if(s)s.saved=b.dataset.on!=='true';render()});
   app.querySelectorAll('[data-track]').forEach(b=>b.onclick=async()=>{await api('/applications/'+b.dataset.track,'PUT',{status:'planning'});b.textContent='Tracking'});
 }
@@ -106,6 +111,11 @@ function editForm(s){
   <label>Minimum IELTS<input name="min_ielts" type="number" step="any" value="${v('min_ielts')}"></label></div>
   <label>Eligibility (as stated by the provider)<textarea name="eligibility_text" rows="3">${v('eligibility_text')}</textarea></label>
   <label>Funding details (as stated)<textarea name="funding_details" rows="2">${v('funding_details')}</textarea></label>
+  <label>Application fee waiver (as stated)<textarea name="application_fee_waiver" rows="2">${v('application_fee_waiver')}</textarea></label>
+  <label>English requirement / exemptions (as stated)<textarea name="english_proficiency_exemptions" rows="2">${v('english_proficiency_exemptions')}</textarea></label>
+  <label>Stay-back visa duration (as stated)<textarea name="stay_back_visa_duration" rows="2">${v('stay_back_visa_duration')}</textarea></label>
+  <label>Work allowance while studying (as stated)<textarea name="in_study_work_allowance" rows="2">${v('in_study_work_allowance')}</textarea></label>
+  <label>Cost of living (as stated)<textarea name="local_cost_of_living_estimate" rows="2">${v('local_cost_of_living_estimate')}</textarea></label>
   <p class="mute">Only enter what the official page states. Leave blank if unknown.</p>
   <button class="btn" data-save-e="${s.id}">Save details</button><span class="err"></span>`;
 }
@@ -125,7 +135,7 @@ async function adminView(){
   $('#sa').onclick=async()=>{try{await api('/admin/sources','POST',{name:$('#sn').value,url:$('#su').value,kind:$('#sk').value});adminView()}catch(x){$('#sm').textContent=x.message}};
   app.querySelectorAll('[data-e]').forEach(b=>b.onclick=()=>{const d=$('#ef'+b.dataset.e);d.hidden=!d.hidden});
   app.querySelectorAll('[data-save-e]').forEach(b=>b.onclick=async()=>{const id=b.dataset.saveE,g=k=>document.querySelector(`#ef${id} [name=${k}]`).value,list=k=>g(k).split(',').map(x=>x.trim()).filter(Boolean);
-    const body={title:g('title'),provider:g('provider'),country:g('country'),funding_type:g('funding_type'),eligibility_text:g('eligibility_text'),funding_details:g('funding_details'),deadline:g('deadline'),application_url:g('application_url'),min_degree_class:g('min_degree_class'),min_work_years:g('min_work_years'),min_ielts:g('min_ielts'),minimum_cgpa:g('minimum_cgpa'),degree_levels:list('degree_levels'),eligible_nationalities:list('eligible_nationalities')};
+    const body={title:g('title'),provider:g('provider'),country:g('country'),funding_type:g('funding_type'),eligibility_text:g('eligibility_text'),funding_details:g('funding_details'),deadline:g('deadline'),application_url:g('application_url'),min_degree_class:g('min_degree_class'),min_work_years:g('min_work_years'),min_ielts:g('min_ielts'),minimum_cgpa:g('minimum_cgpa'),degree_levels:list('degree_levels'),eligible_nationalities:list('eligible_nationalities'),application_fee_waiver:g('application_fee_waiver'),english_proficiency_exemptions:g('english_proficiency_exemptions'),stay_back_visa_duration:g('stay_back_visa_duration'),in_study_work_allowance:g('in_study_work_allowance'),local_cost_of_living_estimate:g('local_cost_of_living_estimate')};
     try{await api('/admin/scholarships/'+id,'PUT',body);adminView()}catch(x){document.querySelector(`#ef${id} .err`).textContent=' '+x.message}});
   $('#ia').onclick=async()=>{try{const r=await api('/stage2/ingest','POST',{source_url:$('#iu').value,text:$('#it').value});$('#im').textContent='Queued job '+r.job_id+(r.domains_saved.length?' · '+r.domains_saved.length+' official domain(s) saved for review':'');}catch(x){$('#im').textContent=x.message}};
   $('#ip').onclick=async()=>{$('#im').textContent='Processing…';try{const r=await api('/stage2/process','POST');if(r.llm==='disabled')$('#im').textContent='AI is off (no API key set). Jobs stay queued.';else adminView()}catch(x){$('#im').textContent=x.message}};

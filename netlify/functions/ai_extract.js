@@ -27,7 +27,8 @@ Use null for anything not explicitly stated. funding_type must be exactly "Fully
 minimum_cgpa only if stated on, or clearly convertible to, a 5.0 scale; otherwise null.
 deadline as YYYY-MM-DD only if a full date with year is stated. eligibility_criteria: copy the stated requirements concisely.`;
 
-const enabled = () => !!process.env.LLM_API_KEY;
+const apiKey = () => process.env.LLM_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+const enabled = () => !!apiKey();
 const provider = () => (process.env.LLM_PROVIDER || 'gemini').toLowerCase();
 const DEFAULT_MODEL = { gemini: 'gemini-2.5-flash', openai: 'gpt-4o-mini', anthropic: 'claude-haiku-5-5' };
 const modelName = () => process.env.LLM_MODEL || DEFAULT_MODEL[provider()] || DEFAULT_MODEL.gemini;
@@ -36,7 +37,7 @@ const PROVIDERS = {
   async gemini(text) {
     const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(modelName())}:generateContent`, {
       method: 'POST', signal: AbortSignal.timeout(8000),
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': process.env.LLM_API_KEY },
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey() },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: SYSTEM }] },
         contents: [{ role: 'user', parts: [{ text }] }],
@@ -53,7 +54,7 @@ const PROVIDERS = {
   async openai(text) {
     const r = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST', signal: AbortSignal.timeout(8000),
-      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + process.env.LLM_API_KEY },
+      headers: { 'content-type': 'application/json', authorization: 'Bearer ' + apiKey() },
       body: JSON.stringify({
         model: modelName(),
         messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: text }],
@@ -68,7 +69,7 @@ const PROVIDERS = {
   async anthropic(text) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST', signal: AbortSignal.timeout(8000),
-      headers: { 'content-type': 'application/json', 'x-api-key': process.env.LLM_API_KEY, 'anthropic-version': '2023-06-01' },
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey(), 'anthropic-version': '2023-06-01' },
       body: JSON.stringify({
         model: modelName(), max_tokens: 1000, system: SYSTEM,
         tools: [{ name: 'record_scholarship', description: 'Record extracted scholarship fields', input_schema: SCHEMA }],

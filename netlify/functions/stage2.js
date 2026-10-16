@@ -14,7 +14,7 @@ exports.handler = async (e) => {
     if (!user.admin) return ok({ error: 'Admins only' }, 403);
     if (path === '/ingest' && m === 'POST') return ok(await C.enqueue(sql, body), 201);
     if (path === '/process' && m === 'POST') return ok(await C.processBatch(sql, AI.extract, AI.enabled));
-    if (path === '/jobs' && m === 'GET') return ok({ llm_enabled: AI.enabled(), ...(await C.jobStatus(sql)) });
+    if (path === '/jobs' && m === 'GET') return ok({ llm_enabled: AI.enabled(), env_hints: Object.keys(process.env).filter(k => /LLM|GEMINI|GOOGLE|API_KEY/i.test(k)), ...(await C.jobStatus(sql)) });
     if (path === '/discover-domains' && m === 'POST') return ok({ saved: await C.saveDomains(sql, body.urls) });
     return ok({ error: 'Not found' }, 404);
   } catch (err) { console.error(err); return ok({ error: err.status ? err.message : 'Something went wrong on the server' }, err.status || 500); }

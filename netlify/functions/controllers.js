@@ -62,7 +62,7 @@ function matchAll(p, s) {
 }
 async function matchBatch(sql, uid, cursor) {
   const p = (await sql('select * from profiles where user_id=$1', [uid]))[0] || {};
-  const rows = await sql("select * from scholarships where status='active' and id>$1 order by id limit $2", [cursor, BATCH]);
+  const rows = await sql("select s.*, (sv.user_id is not null) as saved from scholarships s left join saved sv on sv.scholarship_id=s.id and sv.user_id=$3 where s.status='active' and s.id>$1 order by s.id limit $2", [cursor, BATCH, uid]);
   return { items: rows.map(s => ({ ...s, match: matchAll(p, s) })), next_cursor: rows.length === BATCH ? rows[rows.length - 1].id : null };
 }
 async function setCgpa(sql, uid, cgpa) {
@@ -70,4 +70,4 @@ async function setCgpa(sql, uid, cgpa) {
   if (n !== null && (isNaN(n) || n < 0 || n > 5)) throw Object.assign(new Error('CGPA must be between 0 and 5'), { status: 400 });
   await sql('update profiles set cgpa=$2 where user_id=$1', [uid, n]);
 }
-module.exports = { BATCH, saveDomains, enqueue, processBatch, jobStatus, matchBatch, setCgpa };
+module.exports = { BATCH, saveDomains, enqueue, processBatch, jobStatus, matchBatch, matchAll, setCgpa };

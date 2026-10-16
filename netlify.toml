@@ -13,3 +13,5 @@
   schedule = "@daily"
 [functions."ai_process"]
   schedule = "*/15 * * * *"
+[functions."reminders"]
+  schedule = "@daily"

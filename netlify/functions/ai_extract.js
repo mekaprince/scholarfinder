@@ -30,7 +30,7 @@ deadline as YYYY-MM-DD only if a full date with year is stated. eligibility_crit
 const apiKey = () => process.env.LLM_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 const enabled = () => !!apiKey();
 const provider = () => (process.env.LLM_PROVIDER || 'gemini').toLowerCase();
-const DEFAULT_MODEL = { gemini: 'gemini-2.5-flash', openai: 'gpt-4o-mini', anthropic: 'claude-haiku-5-5' };
+const DEFAULT_MODEL = { gemini: 'gemini-3.1-flash-lite', openai: 'gpt-4o-mini', anthropic: 'claude-haiku-5-5' };
 const modelName = () => process.env.LLM_MODEL || DEFAULT_MODEL[provider()] || DEFAULT_MODEL.gemini;
 
 const PROVIDERS = {
